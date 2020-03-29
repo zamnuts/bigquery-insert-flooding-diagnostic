@@ -1,0 +1,50 @@
+{
+  "name": "bigquery-insert-flooding-diagnostic",
+  "version": "1.0.0",
+  "description": "See googleapis/nodejs-bigquery#624",
+  "scripts": {
+    "prestart": "npm run compile",
+    "prestart:await": "npm run compile",
+    "prestart:flood": "npm run compile",
+    "start": "npm run start:await & npm run start:flood",
+    "start:await": "node build await",
+    "start:flood": "node build flood",
+    "compile": "tsc -p .",
+    "fix": "gts fix",
+    "lint": "gts check",
+    "prettier": "prettier 'src/**/*.ts' --write",
+    "test": "npm run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zamnuts/bigquery-insert-flooding-diagnostic.git"
+  },
+  "author": {
+    "name": "Andrew Zammit",
+    "email": "zammit.andrew@gmail.com"
+  },
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/zamnuts/bigquery-insert-flooding-diagnostic/issues"
+  },
+  "homepage": "https://github.com/zamnuts/bigquery-insert-flooding-diagnostic#readme",
+  "devDependencies": {
+    "@types/lodash.chunk": "^4.2.6",
+    "@types/node": "^13.9.5",
+    "@types/uuid": "^7.0.2",
+    "gts": "^1.1.2",
+    "prettier": "^2.0.2",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "@google-cloud/bigquery": "^4.7.0",
+    "delay": "^4.3.0",
+    "event-loop-inspector": "^1.2.2",
+    "event-loop-lag": "^1.4.0",
+    "lodash.chunk": "^4.2.0",
+    "p-event": "^4.1.0",
+    "p-map": "^4.0.0",
+    "pretty-bytes": "^5.3.0",
+    "uuid": "^7.0.2"
+  }
+}
