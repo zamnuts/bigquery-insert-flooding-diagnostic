@@ -1,5 +1,7 @@
 import { TLSSocket } from 'tls';
 import * as prettyBytes from 'pretty-bytes';
+import { Agent as HTTPAgent, globalAgent as globalHttpAgent } from 'http';
+import { globalAgent as globalHttpsAgent } from 'https';
 
 const checkLag = require('event-loop-lag')(1000) as () => number;
 const inspector = require('event-loop-inspector')();
@@ -8,22 +10,53 @@ const { getAgent } = require('teeny-request/build/src/agents');
 function sampleBqAgentSockets(warnThresholdCount = 1000) {
   // probe the agent to watch for socket usage
   const agent = getAgent('https://only-the-proto-matters', { forever: true });
-  const bqSockets = agent.sockets[
+  const bqSocket = agent.sockets[
     'bigquery.googleapis.com:443::::::::::::::::::'
   ] as TLSSocket[];
 
-  if (!bqSockets || !Array.isArray(bqSockets)) {
+  if (!bqSocket || !Array.isArray(bqSocket)) {
     return {
       bqSocketType: '',
-      bqAgentSockets: 0,
+      bqAgentRequests: 0,
     };
   } else {
     return {
-      shouldWarn: bqSockets.length > warnThresholdCount,
-      bqSocketType: bqSockets[0].constructor.name,
-      bqAgentSockets: bqSockets.length,
+      shouldWarn: bqSocket.length > warnThresholdCount,
+      bqSocketType: bqSocket[0].constructor.name,
+      bqAgentRequests: bqSocket.length,
     };
   }
+}
+
+export interface ConnectionStatistics {
+  numRequests: number;
+  numSockets: number;
+}
+
+function countConnections(): ConnectionStatistics {
+  return ([
+    globalHttpAgent,
+    globalHttpsAgent,
+    getAgent('https://only-the-proto-matters', { forever: true }),
+    getAgent('http://only-the-proto-matters', { forever: true }),
+  ] as HTTPAgent[]).reduce(
+    (stats, agent) => {
+      if (!agent || !agent.sockets) {
+        return stats;
+      }
+
+      const sockets = Object.values(agent.sockets);
+      const numConnections = sockets.reduce(
+        (sum, socket) => sum + ((socket && socket.length) || 0),
+        0
+      );
+      return {
+        numRequests: stats.numRequests + numConnections,
+        numSockets: stats.numSockets + sockets.length,
+      };
+    },
+    { numRequests: 0, numSockets: 0 } as ConnectionStatistics
+  );
 }
 
 function sampleLoopLag(warnThresholdMs = 50) {
@@ -57,7 +90,8 @@ export function sampleDump() {
     sampleMemory(),
     sampleLoop(),
     sampleLoopLag(),
-    sampleBqAgentSockets()
+    sampleBqAgentSockets(),
+    countConnections()
   );
   const out = Object.keys(samples).reduce(
     (out, key) => `${out}${out.length ? ', ' : ''}${key}=${samples[key]}`,
